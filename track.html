@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Noltrax Track</title>
+<link rel="stylesheet" href="track.css" />
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <div class="nav-container">
+    <div class="nav-brand">
+      <img src="assets/20260128_164322.png" alt="Logo" class="nav-logo">
+      <span class="brand-text">NOLTRAX <span class="brand-origin">TRACK</span></span>
+    </div>
+    <div class="nav-right">
+      <button class="nav-tab active" onclick="showPage('tagging', this)">Tagging</button>
+      <button class="nav-tab" onclick="showPage('analysis', this)">Analysis</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     TAGGING PAGE  — OBS-style split layout
+     ══════════════════════════════════════════ -->
+<div id="page-tagging" class="page active">
+
+  <!-- ── TOP ROW: video (left) + right panel ── -->
+  <div class="top-row">
+
+    <!-- Left: video -->
+    <div class="video-col">
+      <div id="videoWrapper">
+        <span class="video-placeholder">No video loaded</span>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div class="right-panel">
+
+      <!-- 1. Video source -->
+      <div class="panel-section card">
+        <div class="panel-section-label">VIDEO SOURCE</div>
+        <div class="source-btn-row">
+          <button class="source-btn active" id="srcLocal" onclick="setSource('local')">Local File</button>
+          <button class="source-btn" id="srcYT" onclick="setSource('youtube')">YouTube</button>
+        </div>
+        <div class="video-input-row" id="localRow">
+          <input type="file" id="localFile" accept="video/*" onchange="loadLocal()" />
+        </div>
+        <div class="video-input-row" id="ytRow" style="display:none">
+          <input id="ytUrl" placeholder="Paste YouTube URL..." />
+          <button class="load-btn" onclick="loadYouTube()">Load</button>
+        </div>
+      </div>
+
+      <!-- 2. Edit buttons -->
+      <div class="panel-section card">
+        <div class="panel-section-label">QUICK ACTIONS</div>
+        <div class="edit-btn-row">
+          <button class="edit-btn" onclick="undoLast()">↩ Undo</button>
+          <button class="edit-btn" onclick="exportJSON()">↓ Export</button>
+          <button class="edit-btn" onclick="clearAll()">✕ Clear</button>
+          <button class="edit-btn" onclick="showPage('analysis', document.querySelector(\'.nav-tab:last-child\'))">📊 Analysis</button>
+        </div>
+      </div>
+
+      <!-- 3. Match info (collapsible) -->
+      <div class="panel-section card">
+        <div class="panel-section-label collapsible-trigger" onclick="toggleCollapse('matchInfo')">
+          MATCH INFO <span class="collapse-arrow" id="arrow-matchInfo">▾</span>
+        </div>
+        <div class="collapsible-body" id="matchInfo">
+          <div class="meta-col">
+            <input id="matchName"    placeholder="Match Name" class="meta-input" />
+            <input id="matchDate"    type="date" class="meta-input" />
+            <div class="meta-two">
+              <input id="homeTeam"   placeholder="Home Team" class="meta-input" />
+              <input id="awayTeam"   placeholder="Away Team" class="meta-input" />
+            </div>
+            <div class="meta-two">
+              <input id="analystName"  placeholder="Analyst Name" class="meta-input" />
+              <input id="teamAnalyzed" placeholder="Team Analyzed" class="meta-input" />
+            </div>
+          </div>
+
+          <!-- Rosters -->
+          <div class="roster-split">
+            <div>
+              <div class="roster-mini-label">HOME ROSTER</div>
+              <table class="roster-table"><thead><tr>
+                <th class="col-no">NO</th><th class="col-pos">POS</th><th class="col-name">NAME</th>
+              </tr></thead>
+              <tbody id="homeRoster"></tbody></table>
+              <div class="sub-divider">SUBSTITUTES</div>
+              <table class="roster-table"><tbody id="homeSubRoster"></tbody></table>
+            </div>
+            <div>
+              <div class="roster-mini-label">AWAY ROSTER</div>
+              <table class="roster-table"><thead><tr>
+                <th class="col-no">NO</th><th class="col-pos">POS</th><th class="col-name">NAME</th>
+              </tr></thead>
+              <tbody id="awayRoster"></tbody></table>
+              <div class="sub-divider">SUBSTITUTES</div>
+              <table class="roster-table"><tbody id="awaySubRoster"></tbody></table>
+            </div>
+          </div>
+          <button class="start-btn" onclick="startSession()">Apply Roster →</button>
+        </div>
+      </div>
+
+      <!-- 4. Pitch map -->
+      <div class="panel-section card">
+        <div class="panel-section-label">LOCATION ON PITCH</div>
+        <div class="pitch-wrap" id="pitchWrap">
+          <canvas id="pitchCanvas"></canvas>
+        </div>
+        <div class="pitch-hint" id="pitchHint">Complete tagging steps first</div>
+      </div>
+
+    </div><!-- /right-panel -->
+  </div><!-- /top-row -->
+
+  <!-- ── BOTTOM ROW: tag controls (left) + event log (right) ── -->
+  <div class="bottom-row">
+
+    <!-- Tag controls -->
+    <div class="tag-controls card">
+
+      <div class="step-row">
+        <div class="step-dot active" id="dot0"></div>
+        <div class="step-dot" id="dot1"></div>
+        <div class="step-dot" id="dot2"></div>
+        <div class="step-dot" id="dot3"></div>
+        <div class="step-dot" id="dot4"></div>
+        <span class="step-label">Select category → event → result → player → pitch</span>
+      </div>
+
+      <div class="controls-row">
+
+        <div class="ctrl-block">
+          <div class="ctrl-label">CATEGORY</div>
+          <div class="cat-grid" id="catGrid"></div>
+        </div>
+
+        <div class="ctrl-block">
+          <div class="ctrl-label">EVENT</div>
+          <div class="event-grid" id="evGrid">
+            <div class="empty-state" style="grid-column:1/-1;font-size:11px">Select category first</div>
+          </div>
+        </div>
+
+        <div class="ctrl-block">
+          <div class="ctrl-label">RESULT</div>
+          <div class="result-grid" id="resGrid"></div>
+        </div>
+
+        <div class="ctrl-block">
+          <div class="ctrl-label">PLAYER</div>
+          <div class="player-scroll" id="playerGrid">
+            <div class="empty-state" style="font-size:11px;width:100%">No roster loaded</div>
+          </div>
+          <div style="margin-top:8px">
+            <div class="ctrl-label">NOTES</div>
+            <textarea class="notes-input" id="notesInput" placeholder="Optional notes..."></textarea>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Event log -->
+    <div class="log-panel card">
+      <div class="log-header-row">
+        <div class="card-title" style="margin:0">
+          Event Log (<span id="logCount">0</span>)
+        </div>
+        <button class="export-btn" onclick="exportJSON()">↓ Export JSON</button>
+      </div>
+      <div class="log-table-wrap">
+        <table class="log-table">
+          <thead>
+            <tr>
+              <th class="lt-num">#</th>
+              <th class="lt-time">Time</th>
+              <th class="lt-cat">Category</th>
+              <th class="lt-desc">Descriptor</th>
+              <th class="lt-notes">Notes</th>
+              <th class="lt-del"></th>
+            </tr>
+          </thead>
+          <tbody id="eventLog"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- /bottom-row -->
+</div><!-- /page-tagging -->
+
+<!-- ══════════════════════════════════════════
+     ANALYSIS PAGE
+     ══════════════════════════════════════════ -->
+<div id="page-analysis" class="page">
+  <div class="analysis-layout">
+
+    <div>
+      <div class="card">
+        <div class="filter-row" id="heatmapFilters">
+          <button class="filter-btn active" onclick="setHeatmapFilter('all', this)">All Players</button>
+        </div>
+        <div class="heatmap-wrap">
+          <canvas id="heatmapCanvas"></canvas>
+        </div>
+        <div class="heatmap-legend">
+          <span>Low</span>
+          <div class="legend-bar"></div>
+          <span>High</span>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-title">Stats Overview</div>
+        <div class="stats-grid" id="statsGrid">
+          <div class="empty-state" style="grid-column:1/-1">No events to analyze</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Event Breakdown</div>
+        <div class="event-breakdown" id="eventBreakdown">
+          <div class="empty-state">No events to analyze</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast"></div>
+<script src="track.js"></script>
+</body>
+          </html>
+          
